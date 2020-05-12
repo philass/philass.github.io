@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "GPU utilities"
+title: "AWK + GPU = gpawk"
 ---
 
 AWK is a programming langauge intended for text processing that ships with the majority of linux devices. AWK can also be used to write sorting routines and interpreters (if you are friggin insane and have nothing better to do). There is something especially sexy about having mastery over an outdated unix technology. For this reason I have decided to start my AWK journey. 
