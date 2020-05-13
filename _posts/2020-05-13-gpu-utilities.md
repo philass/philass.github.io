@@ -3,7 +3,7 @@ layout: post
 title: "AWK + GPU = gpawk"
 ---
 
-AWK is a programming langauge intended for text processing that ships with the majority of linux devices. AWK can also be used to write sorting routines and interpreters (if you are friggin insane and have nothing better to do). There is something especially sexy about having mastery over an outdated unix technology. For this reason I have decided to start my AWK journey. 
+AWK is a programming langauge intended for text processing that ships with the majority of unix devices. AWK can also be used to write sorting routines and interpreters (if you are friggin insane and have nothing better to do). There is something especially sexy about having mastery over an outdated unix technology. For this reason I have decided to start my AWK journey. 
 
 I have found that one of the best ways to get better at a tool is to implement it. Thus I decided to implement an important subset of AWK. To make this programming even more interesting (and perhaps even novel) I plan to write an AWK interpreter that will run on the GPU. I've always found GPU technology fun, and mixing learning AWK and improving my proficiency with GPU/Cuda programming seems like a win win. Wouldn't it be nifty if an AWK program could leverage the GPU to process massive text files more rapidly than could be achieved on a CPU?
 
