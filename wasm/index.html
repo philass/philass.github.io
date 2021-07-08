@@ -1,20 +1,37 @@
 <!doctype html>
 <html>
   <label for="mandelbrot">Numbers for mandelbrot set!</label><br>
-  <input type="text" value="1000" id="screenX" name="screenX"><br>
-  <input type="text" value="1000" id="screenY" name="screenY"><br>
-  <input type="text" value="255" id="depth" name="depth"><br>
-  <input type="text" value="-2.23" id="xmin" name="xmin"><br>
-  <input type="text" value="-1.15" id="ymin" name="ymin"><br>
-  <input type="text" value=".83" id="xmax" name="xmax"><br>
-  <input type="text" value="1.15" id="ymax" name="ymax"><br>
-  <button id="action" onclick="myFunction()">Run Mandelbrot!</button>
+  <input type="range" min="20" max="500" value="200" class="slider" id="screenX"  >
+  <br>
+  <input type="range" min="20" max="500" value="200" class="slider" id="screenY"  >
+  <br>
+  <input type="range" min="-1000" max="1000" value="200" class="slider" id="depth"  >
+  <br>
+  <input step="0.01" type="range" min="-3" max="0" value="-2.23" class="slider" id="xmin"  >
+  <br>
+  <input step="0.01" type="range" min="-3" max="0" value="-1.15" class="slider" id="ymin"  >
+  <br>
+  <input step="0.01" type="range" min="0" max="3" value=".83" class="slider" id="xmax"  >
+  <br>
+  <input step="0.01" type="range" min="0" max="3" value="1.15" class="slider" id="ymax"  >
+  <br>
   <p>
   <canvas id="canvas"></canvas>
   </p>
   <script src="mandelbrot.js"></script>
   <script>
-    async function myFunction() {
+    var fc; 
+    Module.onRuntimeInitialized = () => {
+      fc = new FutharkContext();
+    }
+    document.getElementById("screenX").oninput = myFunction;
+    document.getElementById("screenY").oninput = myFunction;
+    document.getElementById("depth").oninput = myFunction;
+    document.getElementById("xmin").oninput = myFunction;
+    document.getElementById("ymin").oninput = myFunction;
+    document.getElementById("xmax").oninput = myFunction;
+    document.getElementById("ymax").oninput = myFunction;
+    function myFunction() {
       // Get variables from input fields
       var screenX = BigInt(parseInt(document.getElementById("screenX").value));
       var screenY = BigInt(parseInt(document.getElementById("screenY").value));
@@ -24,8 +41,6 @@
       var xmax = parseFloat(document.getElementById("xmax").value);
       var ymax = parseFloat(document.getElementById("ymax").value);
       // Call Futhark
-      var instance = await createFutharkModule();
-      var fc = new instance.FutharkContext();
       console.time("mandelbrot");
       var result = fc.main(screenX, screenY, depth, xmin, ymin, xmax, ymax);
       console.timeEnd("mandelbrot");
@@ -47,7 +62,6 @@
       var imgdata = new ImageData(data, Number(screenX), Number(screenY));
       ctx.putImageData(imgdata, 0, 0);
       result.free();
-      fc.free();
     }
   </script>
 </html>
