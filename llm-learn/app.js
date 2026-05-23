@@ -2,24 +2,45 @@
   "use strict";
 
   const symbols = [
-    ["B", "batch", "How many examples are processed together."],
-    ["L", "number of layers", "How many decoder blocks are stacked."],
-    ["T", "sequence length (query)", "The query-token axis in the current forward pass."],
-    ["S", "sequence length (key value)", "The key/value-token axis attended over."],
-    ["V", "vocab", "The vocabulary axis used by token embeddings and logits."],
-    ["D", "d_model, embedding dimension", "The residual-stream width."],
-    ["F", "MLP hidden dimension", "The expanded hidden axis inside the feed-forward block."],
-    ["H", "attention head dimension", "The width of each attention head."],
-    ["N", "number of query heads", "How many query heads the model has."],
-    ["K", "number of key/value heads", "How many shared key/value heads are used."],
-    ["G", "q heads per kv head = N // K", "Grouped-query attention ratio."],
-  ].map(([symbol, answer, note]) => ({ symbol, answer, note }));
+    ["B", "batch"],
+    ["L", "number of layers"],
+    ["T", "sequence length (query)"],
+    ["S", "sequence length (key value)"],
+    ["V", "vocab"],
+    ["D", "d_model, embedding dimension"],
+    ["F", "MLP hidden dimension"],
+    ["H", "attention head dimension"],
+    ["N", "number of query heads"],
+    ["K", "number of key/value heads"],
+    ["G", "q heads per kv head"],
+  ].map(([symbol, answer]) => ({ symbol, answer }));
+
+  const symbolRelationships = [
+    "T often equals S during training/prefill; during cached decode T is often 1 while S grows.",
+    "Standard MHA usually has N = K and G = 1; GQA/MQA usually has N > K.",
+    "G = N // K, so N = K * G.",
+    "D is commonly split across heads as D = N * H, so H = D // N.",
+    "F is usually a multiple of D, often roughly 3D to 4D.",
+    "B, L, and V are usually independent of the attention-head relationships.",
+  ];
 
   const operations = [
     {
+      name: "Attention input norm",
+      prompt: "Fill in the input/output shapes and forward FLOPs for the attention norm.",
+      token: "Attention input norm",
+      fields: [
+        ["input", "BTD", "shape"],
+        ["result", "BTD", "shape"],
+        ["FLOPs", "5BTD", "flops"],
+      ],
+      detail: "The attention norm preserves the residual-stream shape. The FLOP count is a compact LayerNorm-style estimate.",
+      formula: ["input: B T D", "normalized: B T D", "FLOPs: 5 B T D"],
+    },
+    {
       name: "Query projection",
       prompt: "Fill in each shape and forward FLOPs for XW_Q.",
-      token: "BTD x DNH",
+      token: "Query projection",
       fields: [
         ["X", "BTD", "shape"],
         ["W_Q", "DNH", "shape"],
@@ -33,7 +54,7 @@
     {
       name: "Key projection",
       prompt: "Fill in each shape and forward FLOPs for XW_K.",
-      token: "BSD x DKH",
+      token: "Key projection",
       fields: [
         ["X", "BSD", "shape"],
         ["W_K", "DKH", "shape"],
@@ -47,7 +68,7 @@
     {
       name: "Value projection",
       prompt: "Fill in each shape and forward FLOPs for XW_V.",
-      token: "BSD x DKH",
+      token: "Value projection",
       fields: [
         ["X", "BSD", "shape"],
         ["W_V", "DKH", "shape"],
@@ -61,7 +82,7 @@
     {
       name: "Group query heads",
       prompt: "Fill in the input/output shapes and forward FLOPs for the query-head reshape.",
-      token: "BTNH reshape",
+      token: "Group query heads",
       fields: [
         ["Q before", "BTNH", "shape"],
         ["Q after", "BTKGH", "shape"],
@@ -74,7 +95,7 @@
     {
       name: "Attention scores",
       prompt: "Fill in each shape and forward FLOPs for QK^T.",
-      token: "QK^T",
+      token: "Attention scores",
       fields: [
         ["Q", "BTKGH", "shape"],
         ["K", "BSKH", "shape"],
@@ -86,11 +107,36 @@
       formula: ["Q: B T K G H", "K: B S K H", "scores: B T S K G"],
     },
     {
-      name: "Attention weighted sum",
-      prompt: "Fill in each shape and forward FLOPs for attention-weighted value mixing.",
-      token: "scores x V",
+      name: "Apply attention mask",
+      prompt: "Fill in the score, mask, output shape, and forward FLOPs for applying the attention mask.",
+      token: "Apply attention mask",
       fields: [
         ["scores", "BTSKG", "shape"],
+        ["mask", "TS", "shape"],
+        ["result", "BTSKG", "shape"],
+        ["FLOPs", "BTSKG", "flops"],
+      ],
+      detail: "The mask is broadcast over batch and head axes, while the score tensor keeps the same shape.",
+      formula: ["scores: B T S K G", "mask: T S", "masked scores: B T S K G"],
+    },
+    {
+      name: "Attention softmax",
+      prompt: "Fill in the input/output shapes and forward FLOPs for the attention softmax.",
+      token: "Attention softmax",
+      fields: [
+        ["masked scores", "BTSKG", "shape"],
+        ["result", "BTSKG", "shape"],
+        ["FLOPs", "3BTSKG", "flops"],
+      ],
+      detail: "Softmax runs along the S axis and preserves the full attention-score shape.",
+      formula: ["masked scores: B T S K G", "weights: B T S K G", "softmax axis: S"],
+    },
+    {
+      name: "Attention weighted sum",
+      prompt: "Fill in each shape and forward FLOPs for attention-weighted value mixing.",
+      token: "Attention weighted sum",
+      fields: [
+        ["weights", "BTSKG", "shape"],
         ["V", "BSKH", "shape"],
         ["result", "BTKGH", "shape"],
         ["FLOPs", "2BTSKGH", "flops"],
@@ -102,7 +148,7 @@
     {
       name: "Merge query heads",
       prompt: "Fill in the input/output shapes and forward FLOPs for merging query heads.",
-      token: "BTKGH reshape",
+      token: "Merge query heads",
       fields: [
         ["context before", "BTKGH", "shape"],
         ["context after", "BTNH", "shape"],
@@ -113,9 +159,9 @@
       formula: ["context: B T K G H", "K G = N", "merged: B T N H"],
     },
     {
-      name: "Output projection",
+      name: "Attention output projection",
       prompt: "Fill in each shape and forward FLOPs for the output projection.",
-      token: "BTNH x NHD",
+      token: "Attention output projection",
       fields: [
         ["attention", "BTNH", "shape"],
         ["W_O", "NHD", "shape"],
@@ -127,9 +173,34 @@
       formula: ["attention: B T N H", "W_O: N H D", "output: B T D"],
     },
     {
+      name: "Attention residual connection",
+      prompt: "Fill in the input/output shapes and forward FLOPs for the attention residual connection.",
+      token: "Attention residual connection",
+      fields: [
+        ["residual input", "BTD", "shape"],
+        ["attention output", "BTD", "shape"],
+        ["result", "BTD", "shape"],
+        ["FLOPs", "BTD", "flops"],
+      ],
+      detail: "The attention output is added back to the residual stream elementwise.",
+      formula: ["residual: B T D", "attention output: B T D", "result: B T D"],
+    },
+    {
+      name: "MLP input norm",
+      prompt: "Fill in the input/output shapes and forward FLOPs for the MLP norm.",
+      token: "MLP input norm",
+      fields: [
+        ["input", "BTD", "shape"],
+        ["result", "BTD", "shape"],
+        ["FLOPs", "5BTD", "flops"],
+      ],
+      detail: "The MLP norm preserves the residual-stream shape. The FLOP count is a compact LayerNorm-style estimate.",
+      formula: ["input: B T D", "normalized: B T D", "FLOPs: 5 B T D"],
+    },
+    {
       name: "MLP gate projection",
       prompt: "Fill in each shape and forward FLOPs for the MLP gate projection.",
-      token: "BTD x DF",
+      token: "MLP gate projection",
       fields: [
         ["X", "BTD", "shape"],
         ["W_In1", "DF", "shape"],
@@ -143,7 +214,7 @@
     {
       name: "MLP up projection",
       prompt: "Fill in each shape and forward FLOPs for the MLP up projection.",
-      token: "BTD x DF",
+      token: "MLP up projection",
       fields: [
         ["X", "BTD", "shape"],
         ["W_In2", "DF", "shape"],
@@ -155,9 +226,34 @@
       formula: ["X: B T D", "W_In2: D F", "up: B T F"],
     },
     {
+      name: "MLP activation",
+      prompt: "Fill in the input/output shapes and forward FLOPs for the MLP activation.",
+      token: "MLP activation",
+      fields: [
+        ["gate", "BTF", "shape"],
+        ["result", "BTF", "shape"],
+        ["FLOPs", "BTF", "flops"],
+      ],
+      detail: "The activation is elementwise over the gate branch and keeps the MLP hidden shape.",
+      formula: ["gate: B T F", "activated gate: B T F"],
+    },
+    {
+      name: "MLP gated product",
+      prompt: "Fill in the input/output shapes and forward FLOPs for the gated elementwise product.",
+      token: "MLP gated product",
+      fields: [
+        ["activated gate", "BTF", "shape"],
+        ["up", "BTF", "shape"],
+        ["result", "BTF", "shape"],
+        ["FLOPs", "BTF", "flops"],
+      ],
+      detail: "The activated gate and up branch are multiplied elementwise.",
+      formula: ["activated gate: B T F", "up: B T F", "product: B T F"],
+    },
+    {
       name: "MLP output projection",
       prompt: "Fill in each shape and forward FLOPs for the MLP output projection.",
-      token: "BTF x FD",
+      token: "MLP output projection",
       fields: [
         ["activation", "BTF", "shape"],
         ["W_Out", "FD", "shape"],
@@ -167,6 +263,19 @@
       answer: "BTD",
       detail: "The hidden axis F contracts back down to D.",
       formula: ["activation: B T F", "W_Out: F D", "output: B T D"],
+    },
+    {
+      name: "MLP residual connection",
+      prompt: "Fill in the input/output shapes and forward FLOPs for the MLP residual connection.",
+      token: "MLP residual connection",
+      fields: [
+        ["residual input", "BTD", "shape"],
+        ["MLP output", "BTD", "shape"],
+        ["result", "BTD", "shape"],
+        ["FLOPs", "BTD", "flops"],
+      ],
+      detail: "The MLP output is added back to the residual stream elementwise.",
+      formula: ["residual: B T D", "MLP output: B T D", "result: B T D"],
     },
   ];
 
@@ -335,9 +444,20 @@
   }
 
   function renderSymbolTable() {
-    return symbols
+    const table = symbols
       .map((item) => `<div><strong>${escapeHtml(item.symbol)}</strong><span>${escapeHtml(item.answer)}</span></div>`)
       .join("");
+    const relationships = symbolRelationships
+      .map((item) => `<li>${escapeHtml(item)}</li>`)
+      .join("");
+
+    return `
+      <div class="symbol-reference-grid">${table}</div>
+      <section class="symbol-relationships" aria-label="Symbol relationships">
+        <h4>Relationships</h4>
+        <ul>${relationships}</ul>
+      </section>
+    `;
   }
 
   function renderMathText(value) {
