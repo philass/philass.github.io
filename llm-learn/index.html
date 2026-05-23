@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Transformer Accounting Gym</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Forward-pass shape calculus</p>
+          <h1>Transformer Accounting Gym</h1>
+          <p class="lede">
+            Memorize the symbols, tensor dimensions, and decoder-block operations
+            from the Transformer Accounting diagram one short drill at a time.
+          </p>
+        </div>
+
+        <figure class="reference-diagram">
+          <img
+            src="assets/transformer-diagram.png"
+            alt="Transformer decoder block diagram showing attention and MLP tensor shapes with a symbol table"
+          />
+        </figure>
+      </section>
+
+      <section class="game-board">
+        <aside class="side-panel">
+          <div class="brand">
+            <span class="mark">TA</span>
+            <div>
+              <strong>Daily Drill</strong>
+              <span id="dateLabel"></span>
+            </div>
+          </div>
+
+          <nav class="mode-tabs" aria-label="Drill modes">
+            <button class="tab active" type="button" data-mode="symbols">
+              <span>01</span> Symbols
+            </button>
+            <button class="tab" type="button" data-mode="operations">
+              <span>02</span> Operations
+            </button>
+            <button class="tab" type="button" data-mode="path">
+              <span>03</span> Path Recall
+            </button>
+            <button class="tab" type="button" data-mode="tidbits">
+              <span>04</span> Tidbits
+            </button>
+          </nav>
+
+          <div class="stats">
+            <div>
+              <span>Accuracy</span>
+              <strong id="accuracy">New</strong>
+            </div>
+            <div>
+              <span>Answered</span>
+              <strong id="answered">0</strong>
+            </div>
+            <div>
+              <span>Streak</span>
+              <strong id="streak">0</strong>
+            </div>
+          </div>
+        </aside>
+
+        <section class="drill">
+          <div class="drill-header">
+            <div>
+              <p class="eyebrow" id="modeLabel">Symbols</p>
+              <h2 id="promptTitle">What does this symbol mean?</h2>
+            </div>
+            <button class="icon-button" id="nextButton" type="button" aria-label="Next card" title="Next card">
+              &#8635;
+            </button>
+          </div>
+
+          <article class="card">
+            <div class="question-zone">
+              <p class="question-kicker" id="questionKicker">Symbol</p>
+              <div class="big-token" id="bigToken">B</div>
+              <p class="question-text" id="questionText">Type the exact answer.</p>
+              <div class="symbol-reference" id="symbolReference" hidden></div>
+            </div>
+
+            <form id="answerForm" class="answer-form">
+              <div class="answer-toolbar" id="answerToolbar" hidden>
+                <label class="toggle">
+                  <input type="checkbox" id="symbolToggle" />
+                  <span>Show symbol table</span>
+                </label>
+              </div>
+              <div class="answer-fields" id="answerFields"></div>
+              <button class="primary-action" type="submit">Check answer</button>
+            </form>
+          </article>
+
+          <article class="feedback" id="feedback" hidden>
+            <div class="score-badge" id="scoreBadge">0</div>
+            <div>
+              <p class="eyebrow">Why</p>
+              <h3 id="feedbackTitle">Correct</h3>
+              <p id="feedbackText"></p>
+              <div class="shape-box" id="shapeBox"></div>
+            </div>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
