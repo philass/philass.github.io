@@ -1,7 +1,7 @@
 # Transformer Accounting Gym
 
-A small browser-based drill app for practicing transformer tensor-shape symbols,
-decoder-block operations, and path recall.
+A small browser-based drill app for practicing transformer tensor shapes and
+decoder-block operations.
 
 ## Launch
 

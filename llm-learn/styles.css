@@ -298,14 +298,6 @@ h1 {
   gap: 16px;
 }
 
-.answer-form.reference-mode {
-  align-content: start;
-}
-
-.answer-form.reference-mode .primary-action {
-  display: none;
-}
-
 .answer-toolbar {
   display: flex;
   justify-content: flex-end;
@@ -396,50 +388,6 @@ h1 {
   outline: 3px solid rgba(23, 143, 143, 0.16);
 }
 
-.tidbit-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.tidbit {
-  display: grid;
-  gap: 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 14px;
-  background: #fcfdfb;
-}
-
-.tidbit div {
-  display: grid;
-  gap: 3px;
-}
-
-.tidbit strong {
-  color: var(--navy);
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 1.2rem;
-}
-
-.tidbit span {
-  color: var(--teal);
-  font-size: 0.78rem;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.tidbit p {
-  margin-bottom: 0;
-  color: #34404d;
-  line-height: 1.45;
-}
-
-.tidbit small {
-  color: var(--muted);
-  line-height: 1.4;
-}
-
 .primary-action {
   min-height: 52px;
   border: 0;
@@ -520,9 +468,8 @@ h1 {
     position: static;
   }
 
-  .mode-tabs,
   .stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -539,7 +486,6 @@ h1 {
   .mode-tabs,
   .stats,
   .symbol-reference,
-  .tidbit-grid,
   .feedback {
     grid-template-columns: 1fr;
   }

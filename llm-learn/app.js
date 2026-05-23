@@ -170,110 +170,8 @@
     },
   ];
 
-  const paths = [
-    {
-      name: "Attention full path",
-      token: "X -> Attention -> residual",
-      prompt: "Choose the correct forward-pass shape path through attention.",
-      answer: "BTD -> BTNH -> BTKGH -> BTSKG -> BTKGH -> BTNH -> BTD",
-      detail: "This is the core attention route: project, group heads, score, mix values, merge heads, project out.",
-      formula: [
-        "BTD x DNH = BTNH",
-        "BTNH -> BTKGH",
-        "BTKGH x BSKH = BTSKG",
-        "BTSKG x BSKH = BTKGH",
-        "BTKGH -> BTNH",
-        "BTNH x NHD = BTD",
-      ],
-    },
-    {
-      name: "MLP full path",
-      token: "X -> MLP -> residual",
-      prompt: "Choose the correct forward-pass shape path through the gated MLP.",
-      answer: "BTD -> BTF and BTF -> BTF -> BTD",
-      detail: "Both input projections expand to F; the gated activation stays BTF before projecting back to D.",
-      formula: ["BTD x DF = BTF", "gelu(BTF) * BTF = BTF", "BTF x FD = BTD"],
-    },
-    {
-      name: "Grouped-query attention",
-      token: "N, K, G",
-      prompt: "Choose the correct relationship for grouped-query attention in this notation.",
-      answer: "N = K * G",
-      detail: "G is query heads per key/value head, so G = N // K and N = K * G.",
-      formula: ["N: query heads", "K: key/value heads", "G: query heads per KV head"],
-    },
-  ];
-
-  const tidbits = [
-    {
-      title: "T = S",
-      label: "Training and prefill",
-      text:
-        "In full-sequence self-attention during training or prefill, query length and key/value length are usually the same sequence length.",
-      note: "During cached decoding, T is often 1 while S is the context length so far.",
-    },
-    {
-      title: "N = K",
-      label: "Standard MHA",
-      text:
-        "In standard multi-head attention, the number of query heads usually equals the number of key/value heads.",
-      note: "Grouped-query attention uses K < N; multi-query attention is the extreme case where K = 1.",
-    },
-    {
-      title: "G = 1",
-      label: "No grouping",
-      text: "When N = K, each key/value head serves one query head, so G = N // K = 1.",
-      note: "When K is smaller than N, G tells you how many query heads share each key/value head.",
-    },
-    {
-      title: "D = N * H",
-      label: "Attention width",
-      text:
-        "The model dimension is commonly split evenly across attention heads, so total attention width equals query heads times head dimension.",
-      note: "This makes reshaping between BTD and BTNH feel natural.",
-    },
-    {
-      title: "F ~= 3D to 4D-ish",
-      label: "MLP hidden size",
-      text:
-        "Classic Transformer MLPs often use about 4D hidden width, while modern gated MLPs often land closer to a different multiple.",
-      note: "F is related to D by design choice, but it is not the same kind of axis as sequence length or batch size.",
-    },
-    {
-      title: "T << S",
-      label: "Inference decode",
-      text:
-        "During token-by-token cached decoding, T can be just the new token count while S grows with the accumulated context.",
-      note: "This is why decode attention has a different shape feel from training attention.",
-    },
-  ];
-
-  const modeConfig = {
-    symbols: {
-      label: "Symbols",
-      title: "What does this symbol mean?",
-      cards: makeSymbolCards(),
-    },
-    operations: {
-      label: "Operations",
-      title: "What shape comes out?",
-      cards: makeOperationCards(),
-    },
-    path: {
-      label: "Path Recall",
-      title: "Can you reconstruct the path?",
-      cards: makePathCards(),
-    },
-    tidbits: {
-      label: "Tidbits",
-      title: "Which symbols are usually equal?",
-      cards: [],
-    },
-  };
-
   const state = {
-    mode: "symbols",
-    indexes: { symbols: 0, operations: 0, path: 0 },
+    index: 0,
     stats: loadStats(),
   };
 
@@ -299,19 +197,7 @@
     feedbackText: $("#feedbackText"),
     shapeBox: $("#shapeBox"),
     nextButton: $("#nextButton"),
-    tabs: document.querySelectorAll(".tab"),
   };
-
-  function makeSymbolCards() {
-    return symbols.map((item) => ({
-      kicker: "Symbol",
-      token: item.symbol,
-      prompt: "Type exactly what this symbol corresponds to.",
-      fields: [[item.symbol, item.answer, "text"]],
-      detail: `${item.symbol} means ${item.answer}. ${item.note}`,
-      formula: [`${item.symbol} = ${item.answer}`],
-    }));
-  }
 
   function makeOperationCards() {
     return operations.map((item) => ({
@@ -324,16 +210,7 @@
     }));
   }
 
-  function makePathCards() {
-    return paths.map((item) => ({
-      kicker: item.name,
-      token: item.token,
-      prompt: item.prompt.replace("Choose", "Type"),
-      fields: [[item.name, item.answer, "path"]],
-      detail: item.detail,
-      formula: item.formula,
-    }));
-  }
+  const cards = makeOperationCards();
 
   function loadStats() {
     try {
@@ -352,39 +229,28 @@
   }
 
   function currentCard() {
-    if (state.mode === "tidbits") return null;
-    return modeConfig[state.mode].cards[state.indexes[state.mode]];
+    return cards[state.index];
   }
 
   function render() {
-    const mode = modeConfig[state.mode];
-
     els.dateLabel.textContent = new Date().toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
-    els.modeLabel.textContent = mode.label;
-    els.promptTitle.textContent = mode.title;
-    els.tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.mode === state.mode));
-    els.nextButton.hidden = state.mode === "tidbits";
-    els.answerForm.classList.toggle("reference-mode", state.mode === "tidbits");
-
-    if (state.mode === "tidbits") {
-      renderTidbits();
-      renderStats();
-      return;
-    }
+    els.modeLabel.textContent = "Operations";
+    els.promptTitle.textContent = "What shape comes out?";
+    els.nextButton.hidden = false;
 
     const card = currentCard();
     els.questionKicker.textContent = card.kicker;
     els.bigToken.textContent = card.token;
-    els.bigToken.hidden = state.mode !== "symbols";
-    els.bigToken.classList.toggle("compact", state.mode !== "symbols");
+    els.bigToken.hidden = false;
+    els.bigToken.classList.add("compact");
     els.questionText.innerHTML = renderMathText(card.prompt);
     els.feedback.hidden = true;
-    els.answerToolbar.hidden = state.mode !== "operations";
-    els.symbolReference.hidden = state.mode !== "operations" || !els.symbolToggle.checked;
+    els.answerToolbar.hidden = false;
+    els.symbolReference.hidden = !els.symbolToggle.checked;
     els.symbolReference.innerHTML = renderSymbolTable();
     els.answerFields.innerHTML = card.fields
       .map(
@@ -407,43 +273,6 @@
     renderStats();
   }
 
-  function renderTidbits() {
-    els.questionKicker.textContent = "Defaults";
-    els.bigToken.hidden = true;
-    els.questionText.innerHTML =
-      "Common equalities are useful mental shortcuts, but keep the symbols separate because training, prefill, grouped-query attention, and decode can differ.";
-    els.answerToolbar.hidden = true;
-    els.symbolReference.hidden = true;
-    els.answerFields.innerHTML = `
-      <div class="tidbit-grid">
-        ${tidbits
-          .map(
-            (item) => `
-              <section class="tidbit">
-                <div>
-                  <strong>${colorShape(item.title)}</strong>
-                  <span>${escapeHtml(item.label)}</span>
-                </div>
-                <p>${escapeHtml(item.text)}</p>
-                <small>${escapeHtml(item.note)}</small>
-              </section>
-            `,
-          )
-          .join("")}
-      </div>
-    `;
-    els.answerForm.classList.add("reference-mode");
-    els.feedback.hidden = false;
-    els.scoreBadge.textContent = "!";
-    els.scoreBadge.style.borderColor = "var(--teal)";
-    els.feedbackTitle.textContent = "Mental Defaults";
-    els.feedbackText.textContent =
-      "Training self-attention often has T = S. Standard MHA often has N = K and G = 1. Attention width is commonly D = N * H. During inference decode, T is often much smaller than S.";
-    els.shapeBox.innerHTML = ["B is independent", "L is independent", "V is usually much larger", "F is usually a multiple of D"]
-      .map((line) => `<div>${colorShape(line)}</div>`)
-      .join("");
-  }
-
   function renderStats() {
     const pct = state.stats.answered ? Math.round((state.stats.correct / state.stats.answered) * 100) + "%" : "New";
     els.accuracy.textContent = pct;
@@ -453,7 +282,6 @@
 
   function submit(event) {
     event.preventDefault();
-    if (state.mode === "tidbits") return;
     const card = currentCard();
     const form = new FormData(els.answerForm);
     const results = card.fields.map(([label, expected, type], index) => {
@@ -489,17 +317,12 @@
   }
 
   function placeholderFor(type) {
-    if (type === "text") return "exact meaning";
     if (type === "flops") return "e.g. 2BTDNH";
-    if (type === "path") return "full path";
     return "shape";
   }
 
   function normalizeAnswer(value, type) {
     const trimmed = String(value).trim();
-    if (type === "text") {
-      return trimmed.toLowerCase().replace(/\s+/g, " ");
-    }
     return trimmed
       .toUpperCase()
       .replace(/\s+/g, "")
@@ -538,9 +361,7 @@
   }
 
   function next() {
-    if (state.mode === "tidbits") return;
-    const cards = modeConfig[state.mode].cards;
-    state.indexes[state.mode] = (state.indexes[state.mode] + 1) % cards.length;
+    state.index = (state.index + 1) % cards.length;
     render();
   }
 
@@ -553,21 +374,10 @@
       .replaceAll("'", "&#039;");
   }
 
-  function escapeAttr(value) {
-    return escapeHtml(value);
-  }
-
-  els.tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      state.mode = tab.dataset.mode;
-      render();
-    });
-  });
-
   els.answerForm.addEventListener("submit", submit);
   els.nextButton.addEventListener("click", next);
   els.symbolToggle.addEventListener("change", () => {
-    els.symbolReference.hidden = state.mode !== "operations" || !els.symbolToggle.checked;
+    els.symbolReference.hidden = !els.symbolToggle.checked;
   });
   render();
 })();

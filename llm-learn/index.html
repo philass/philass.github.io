@@ -13,8 +13,8 @@
           <p class="eyebrow">Forward-pass shape calculus</p>
           <h1>Transformer Accounting Gym</h1>
           <p class="lede">
-            Memorize the symbols, tensor dimensions, and decoder-block operations
-            from the Transformer Accounting diagram one short drill at a time.
+            Practice tensor dimensions and decoder-block operations from the
+            Transformer Accounting diagram one short drill at a time.
           </p>
         </div>
 
@@ -36,18 +36,9 @@
             </div>
           </div>
 
-          <nav class="mode-tabs" aria-label="Drill modes">
-            <button class="tab active" type="button" data-mode="symbols">
-              <span>01</span> Symbols
-            </button>
-            <button class="tab" type="button" data-mode="operations">
-              <span>02</span> Operations
-            </button>
-            <button class="tab" type="button" data-mode="path">
-              <span>03</span> Path Recall
-            </button>
-            <button class="tab" type="button" data-mode="tidbits">
-              <span>04</span> Tidbits
+          <nav class="mode-tabs" aria-label="Drill mode">
+            <button class="tab active" type="button" aria-current="page">
+              <span>01</span> Operations
             </button>
           </nav>
 
@@ -70,8 +61,8 @@
         <section class="drill">
           <div class="drill-header">
             <div>
-              <p class="eyebrow" id="modeLabel">Symbols</p>
-              <h2 id="promptTitle">What does this symbol mean?</h2>
+              <p class="eyebrow" id="modeLabel">Operations</p>
+              <h2 id="promptTitle">What shape comes out?</h2>
             </div>
             <button class="icon-button" id="nextButton" type="button" aria-label="Next card" title="Next card">
               &#8635;
@@ -80,14 +71,14 @@
 
           <article class="card">
             <div class="question-zone">
-              <p class="question-kicker" id="questionKicker">Symbol</p>
-              <div class="big-token" id="bigToken">B</div>
-              <p class="question-text" id="questionText">Type the exact answer.</p>
+              <p class="question-kicker" id="questionKicker">Operation</p>
+              <div class="big-token compact" id="bigToken">BTD x DNH</div>
+              <p class="question-text" id="questionText">Fill in each shape and forward FLOPs.</p>
               <div class="symbol-reference" id="symbolReference" hidden></div>
             </div>
 
             <form id="answerForm" class="answer-form">
-              <div class="answer-toolbar" id="answerToolbar" hidden>
+              <div class="answer-toolbar" id="answerToolbar">
                 <label class="toggle">
                   <input type="checkbox" id="symbolToggle" />
                   <span>Show symbol table</span>
